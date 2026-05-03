@@ -267,6 +267,14 @@ export default function App() {
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-md w-full bg-soft-black border-2 border-gold/40 rounded-[2.5rem] p-12 text-center shadow-[0_0_80px_-20px_rgba(212,175,55,0.4)] gold-border-glow relative z-10"
         >
+          <div className="mb-12 flex justify-center">
+            <div className="px-4 py-1.5 rounded-full border border-gold/30 bg-gold/5 flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+              <span className="text-[10px] font-black text-gold tracking-[0.2em] uppercase italic">Designed by Krish Narang</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+            </div>
+          </div>
+
           <div className="w-24 h-24 bg-gold/10 border border-gold/30 rounded-3xl flex items-center justify-center mx-auto mb-10">
             <Lock className="w-12 h-12 text-gold" />
           </div>
@@ -315,6 +323,14 @@ export default function App() {
     return (
       <div className="min-h-screen bg-pure-black flex items-center justify-center p-6 font-sans relative">
         <div className="max-w-3xl w-full bg-soft-black border border-gold/20 rounded-2xl shadow-2xl p-10 relative z-10 gold-border-glow">
+          <div className="mb-8 flex justify-center">
+            <div className="px-6 py-2 rounded-full border border-gold/40 bg-gold/10 flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+              <span className="text-xs font-black text-gold tracking-[0.3em] uppercase italic">System Architect: Krish Narang</span>
+              <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+            </div>
+          </div>
+
           <div className="flex flex-col items-center mb-10 text-center">
             <div className="p-4 bg-gold/5 rounded-full border border-gold/20 mb-4">
               <Shield className="w-10 h-10 text-gold" />
@@ -426,6 +442,11 @@ export default function App() {
       
       {/* SIDEBAR */}
       <aside className="w-80 bg-soft-black border-r border-slate-800 flex flex-col relative z-10">
+        <div className="bg-gold/10 border-b border-gold/20 py-2.5 flex justify-center items-center gap-3">
+          <div className="w-1.5 h-1.5 rounded-full bg-gold/60 animate-pulse" />
+          <span className="text-[9px] font-black text-gold tracking-[0.3em] uppercase italic">Engine by Krish Narang</span>
+          <div className="w-1.5 h-1.5 rounded-full bg-gold/60 animate-pulse" />
+        </div>
         <div className="p-8 border-b border-slate-800">
           <div className="flex items-center gap-3 mb-1 text-white">
             <h1 className="text-2xl font-black italic tracking-tighter">MUN Assistant</h1>
@@ -501,9 +522,15 @@ export default function App() {
         <header className="h-20 bg-pure-black border-b border-slate-800 flex items-center justify-between px-10 relative z-10 transition-all">
           <div className="flex items-center gap-6 flex-grow">
             {!isSearchActive ? (
-              <div className="flex items-center gap-2 text-[10px] font-mono">
-                <span className="text-slate-500 uppercase tracking-widest">Topic:</span>
-                <span className="text-gold uppercase truncate max-w-md">{sessionData.agenda}</span>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2 text-[10px] font-mono">
+                  <span className="text-slate-500 uppercase tracking-widest">Topic:</span>
+                  <span className="text-gold uppercase truncate max-w-md">{sessionData.agenda}</span>
+                </div>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-[8px] text-slate-700 font-mono tracking-widest uppercase">Platform Architect:</span>
+                  <span className="text-[9px] font-black text-gold/60 italic tracking-tight underline decoration-gold/20 underline-offset-2">Krish Narang</span>
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-4 flex-grow max-w-xl">
@@ -713,7 +740,38 @@ export default function App() {
                     </div>
                   )}
 
-                  <div className="prose prose-invert prose-slate max-w-none prose-headings:text-gold prose-headings:font-black prose-headings:tracking-tight prose-headings:mb-4 prose-p:leading-relaxed prose-p:mb-6 prose-li:mb-2 prose-strong:text-white prose-blockquote:border-l-gold prose-blockquote:bg-gold/5 prose-blockquote:px-6 prose-blockquote:py-2 prose-blockquote:rounded-r-xl prose-hr:border-white/10">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center">
+                        <Zap className="w-4 h-4 text-gold" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-mono text-gold uppercase tracking-[0.2em]">Strategic Intelligence</p>
+                        <p className="text-[9px] text-slate-500 font-mono italic">Generated via MAEOS Pipeline</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(msg.content);
+                        // Optional: Add a toast notification here
+                      }}
+                      className="p-2 hover:bg-gold/10 rounded-lg text-gold/40 hover:text-gold transition-all group relative"
+                      title="Copy to Clipboard"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-gold text-pure-black text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-bold">COPY CONTENT</span>
+                    </button>
+                  </div>
+
+                  <div className="prose prose-invert prose-slate max-w-none 
+                    prose-headings:text-gold prose-headings:font-black prose-headings:tracking-tight prose-headings:mb-6 prose-headings:mt-10
+                    prose-p:leading-relaxed prose-p:mb-6 prose-p:text-slate-300
+                    prose-li:text-slate-300 prose-li:mb-2
+                    prose-strong:text-white prose-strong:font-bold
+                    prose-blockquote:border-l-gold prose-blockquote:bg-gold/5 prose-blockquote:px-8 prose-blockquote:py-6 prose-blockquote:rounded-r-3xl prose-blockquote:my-10 prose-blockquote:italic
+                    prose-hr:border-white/10 prose-hr:my-12
+                    prose-table:w-full prose-table:border-collapse prose-th:text-gold prose-th:border-b prose-th:border-gold/20 prose-th:py-3 prose-td:py-3 prose-td:border-b prose-td:border-white/5
+                  ">
                     <ReactMarkdown 
                       components={{
                         p: ({children}) => {
