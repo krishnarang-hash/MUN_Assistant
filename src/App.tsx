@@ -34,6 +34,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from "@google/genai";
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { COUNTRIES, COMMITTEES } from './constants';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -517,11 +518,15 @@ export default function App() {
                 </label>
                 <input 
                   required
+                  list="countries-list"
                   className="w-full bg-pure-black border border-slate-800 p-4 text-white rounded-xl focus:ring-1 focus:ring-gold focus:border-gold outline-none transition-all placeholder:text-slate-700 font-medium"
                   placeholder="e.g. France, USA, Russia"
                   value={onboardingData.country}
                   onChange={e => setOnboardingData({...onboardingData, country: e.target.value})}
                 />
+                <datalist id="countries-list">
+                  {COUNTRIES.map(country => <option key={country} value={country} />)}
+                </datalist>
               </div>
               <div className="space-y-1.5">
                 <label className="text-gold/80 text-[10px] font-bold flex items-center gap-2 uppercase tracking-widest pl-1">
@@ -529,11 +534,15 @@ export default function App() {
                 </label>
                 <input 
                   required
+                  list="committees-list"
                   className="w-full bg-pure-black border border-slate-800 p-4 text-white rounded-xl focus:ring-1 focus:ring-gold focus:border-gold outline-none transition-all placeholder:text-slate-700 font-medium"
                   placeholder="e.g. UNSC, DISEC"
                   value={onboardingData.committee}
                   onChange={e => setOnboardingData({...onboardingData, committee: e.target.value})}
                 />
+                <datalist id="committees-list">
+                  {COMMITTEES.map(committee => <option key={committee} value={committee} />)}
+                </datalist>
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <label className="text-gold/80 text-[10px] font-bold flex items-center gap-2 uppercase tracking-widest pl-1">
