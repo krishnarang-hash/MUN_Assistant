@@ -109,10 +109,8 @@ Always use a respectful and professional tone. You are a master of intelligence 
 export default function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'Dashboard' | 'Speech' | 'Resolution' | 'Strategy' | 'Settings' | 'Reviews'>('Dashboard');
-  const [isActivated, setIsActivated] = useState(() => !!localStorage.getItem('VITE_GEMINI_API_KEY'));
-  const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('VITE_GEMINI_API_KEY') || '');
-  const [tempKey, setTempKey] = useState(userApiKey);
+  const [activeTab, setActiveTab] = useState<'Dashboard' | 'Speech' | 'Resolution' | 'Strategy' | 'Reviews'>('Dashboard');
+  const [isActivated] = useState(true);
   
   // Chat History State
   const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
@@ -277,12 +275,6 @@ export default function App() {
   }, [] as number[]);
 
   useEffect(() => {
-    if (userApiKey) {
-      localStorage.setItem('VITE_GEMINI_API_KEY', userApiKey);
-    }
-  }, [userApiKey]);
-
-  useEffect(() => {
     // Diagnostic Ping
     fetch('/api/health')
       .then(r => r.json())
@@ -328,13 +320,12 @@ export default function App() {
     try {
       console.log(`[CLIENT] AI Request Initiated via @google/genai`);
       
-      // Determine the key: priority to UI-entered key, then environment fallback
-      const apiKey = userApiKey || (process.env as any).GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY;
       
       if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "undefined" || apiKey === "") {
         throw new Error("API_KEY_MISSING");
       }
- 
+  
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -441,8 +432,8 @@ export default function App() {
       const errorMsg: Message = {
         role: 'system',
         content: error?.message?.includes("API_KEY_MISSING") 
-          ? "### ⚠️ Configuration Required\nThe Assistant is offline. Please enter your API key in the **Settings** menu.\n\n[Get your free Gemini API Key here](https://aistudio.google.com/app/apikey)" 
-          : error?.message || "I am having difficulty processing that request. Please verify your API settings.",
+          ? "### ⚠️ Configuration Required\nThe Assistant is offline because the GEMINI_API_KEY is not configured in the system environment." 
+          : error?.message || "I am having difficulty processing that request. Please verify your connection.",
         timestamp: new Date()
       };
       setChatSessions(prev => prev.map(s => 
@@ -454,80 +445,6 @@ export default function App() {
       setIsLoading(false);
     }
   };
-
-  // --- SYSTEM ACTIVATION ---
-  if (!isActivated && activeTab !== 'Reviews') {
-    return (
-      <div className="min-h-screen bg-pure-black flex items-center justify-center p-6 font-sans relative overflow-hidden">
-        {/* Background Decorative Elements */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-gold/20 rounded-full blur-[120px]" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-gold/10 rounded-full blur-[120px]" />
-        </div>
-
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full bg-soft-black border-2 border-gold/40 rounded-[2.5rem] p-12 text-center shadow-[0_0_80px_-20px_rgba(212,175,55,0.4)] gold-border-glow relative z-10"
-        >
-          <div className="mb-12 flex flex-col items-center gap-4">
-            <button
-              onClick={() => setActiveTab('Reviews')}
-              className="text-[10px] text-gold/60 hover:text-gold font-bold flex items-center gap-2 uppercase tracking-widest transition-all"
-            >
-              <Star className="w-3.5 h-3.5" /> Community Feedback Hub
-            </button>
-            <div className="px-4 py-1.5 rounded-full border border-gold/30 bg-gold/5 flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
-              <span className="text-[10px] font-black text-gold tracking-[0.2em] uppercase italic">Designed by Krish Narang</span>
-              <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
-            </div>
-          </div>
-
-          <div className="flex justify-center mb-10">
-            <div className="p-2 bg-white rounded-full border-2 border-gold/40 shadow-[0_0_50px_rgba(212,175,55,0.3)]">
-              <MUNLogo className="w-32 h-32" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-black text-white mb-3">Assistant Activation</h1>
-          <p className="text-slate-500 text-sm font-mono uppercase tracking-[0.2em] mb-10">Integration Required</p>
-          
-          <div className="space-y-6 text-left">
-            <div className="space-y-3">
-              <label className="text-[10px] font-bold text-gold uppercase tracking-widest ml-1">Enter Gemini API Key</label>
-              <input 
-                type="password"
-                placeholder="Paste your key here..."
-                className="w-full bg-pure-black border border-white/10 p-5 rounded-2xl text-white outline-none focus:border-gold shadow-inner transition-all placeholder:text-slate-800"
-                value={tempKey}
-                onChange={(e) => setTempKey(e.target.value)}
-              />
-            </div>
-            
-            <div className="p-4 bg-gold/5 border border-gold/20 rounded-xl">
-              <p className="text-[10px] text-gold/70 leading-relaxed text-center">
-                This application requires a Google Gemini API Key. <br/>
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-gold font-bold underline">Generate a key for free here</a>.
-              </p>
-            </div>
-
-            <button 
-              disabled={!tempKey}
-              onClick={() => {
-                setUserApiKey(tempKey);
-                setIsActivated(true);
-                setIsInitialized(false); // Trigger onboarding if not done
-              }}
-              className="w-full bg-gold disabled:opacity-30 disabled:cursor-not-allowed text-pure-black font-black py-5 rounded-2xl flex items-center justify-center gap-3 hover:bg-gold-light transition-all shadow-lg shadow-gold/20"
-            >
-              ACTIVATE & CONFIRM
-              <Zap className="w-5 h-5" />
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
 
   // --- ONBOARDING UI ---
   if (!isInitialized && activeTab !== 'Reviews') {
@@ -745,8 +662,7 @@ export default function App() {
               { id: 'Dashboard', icon: Shield, label: 'Advisor Hub' },
               { id: 'Speech', icon: MessageSquare, label: 'Speech Lab' },
               { id: 'Resolution', icon: FileText, label: 'Resolution Engine' },
-              { id: 'Strategy', icon: Zap, label: 'Policy Analysis' },
-              { id: 'Settings', icon: Lock, label: 'Settings' }
+              { id: 'Strategy', icon: Zap, label: 'Policy Analysis' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -993,64 +909,6 @@ export default function App() {
 
         {/* FEED */}
         <div className="flex-grow overflow-y-auto p-10 space-y-8 bg-pure-black custom-scrollbar">
-          {/* ASSISTANT SETTINGS */}
-          {activeTab === 'Settings' && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-2xl mx-auto py-12"
-            >
-              <div className="bg-soft-black border border-gold/20 rounded-3xl p-10 shadow-2xl gold-border-glow">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-3 bg-gold/5 rounded-2xl border border-gold/20">
-                    <Lock className="w-6 h-6 text-gold" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-white">Assistant Configuration</h2>
-                    <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mt-1">AI Setup & Preferences</p>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-bold text-gold uppercase tracking-[0.2em] ml-1">Gemini API Key</label>
-                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gold/40 group-focus-within:text-gold transition-colors" />
-                      <input 
-                        type="password"
-                        placeholder="Enter your GEMINI_API_KEY here..."
-                        className="w-full bg-pure-black border border-white/10 p-4 pl-12 rounded-xl text-white outline-none focus:border-gold/60 transition-all placeholder:text-slate-700"
-                        value={userApiKey}
-                        onChange={(e) => setUserApiKey(e.target.value)}
-                      />
-                    </div>
-                    <p className="text-[10px] text-slate-500 leading-relaxed italic px-1">
-                      This key is stored locally in your browser and used to power the Assistant. 
-                      You can get a free key from the <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-gold hover:underline">Google AI Studio API Key panel</a>.
-                    </p>
-                  </div>
-
-                  <div className="pt-6 border-t border-white/5 space-y-4">
-                    <div className="flex items-start gap-3 p-4 bg-gold/5 border border-gold/20 rounded-xl">
-                      <div className="w-2 h-2 bg-gold rounded-full mt-1.5 shrink-0" />
-                      <p className="text-[11px] text-gold-light/80 leading-relaxed">
-                        <strong className="text-gold">Pro Tip:</strong> Usually, you can add this to the **Secrets** menu (the key icon in the bottom left sidebar of AI Studio) under the name `GEMINI_API_KEY`. This is more secure and works across sessions.
-                      </p>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={() => setActiveTab('Dashboard')}
-                    className="w-full bg-gold text-pure-black font-black py-4 rounded-xl hover:bg-gold-light transition-all flex items-center justify-center gap-2"
-                  >
-                    SAVE & RETURN TO HUB
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
           {/* COMMUNITY REVIEWS - SEPARATE FULL PAGE SECTION */}
           {activeTab === 'Reviews' && (
             <motion.div 
@@ -1358,7 +1216,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {(activeTab !== 'Settings' && activeTab !== 'Reviews') && (
+          {(activeTab !== 'Reviews') && (
             <>
               {activeTab === 'Dashboard' && chatLog.length === 1 && (
                 <motion.div 
@@ -1519,7 +1377,7 @@ export default function App() {
         </div>
 
         {/* INPUT HUB - REFINED FOR FLEXIBILITY */}
-        {(activeTab !== 'Settings' && activeTab !== 'Reviews') && (
+        {(activeTab !== 'Reviews') && (
           <div className="p-8 bg-pure-black border-t border-white/5 relative z-30">
             <div className="max-w-5xl mx-auto flex items-end gap-5">
               <div className="flex-grow relative bg-soft-black border border-white/10 rounded-2xl focus-within:border-gold/40 transition-all shadow-inner">
