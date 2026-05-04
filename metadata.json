@@ -1,6 +1,6 @@
 {
   "name": "MUN Assistant",
-  "description": "World-class Model United Nations strategic advisor and full Delegate Operating System for competitive diplomatic dominance.",
+  "description": "Professional Model United Nations advisor and documentation tool for competitive diplomatic prep.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["AI Strategic Analysis", "Speech Generation", "Resolution Drafting"]
+  "majorCapabilities": ["Professional Diplomatic Analysis", "Speech Generation", "Resolution Drafting"]
 }
