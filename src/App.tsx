@@ -63,13 +63,13 @@ const BrandLogo = ({ size = "md", showLogo = true }: { size?: 'sm' | 'md' | 'lg'
   return (
     <div className="flex items-center gap-2 md:gap-3">
       {showLogo && <MUNLogo className={cn(isSm ? "w-6 h-6" : isLg ? "w-16 h-16" : "w-8 h-8 md:w-10 md:h-10", "ring-2 ring-gold/20")} />}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center">
         <h1 className={cn(
           "font-black italic tracking-tighter text-white uppercase",
           isSm ? "text-sm" : isLg ? "text-4xl md:text-6xl" : "text-lg"
         )}>MUN</h1>
         <div className={cn(
-          "w-px bg-gold/40 mx-0.5",
+          "w-px bg-gold/40 mx-2 md:mx-3",
           isSm ? "h-4" : isLg ? "h-12" : "h-5"
         )} />
         <h1 className={cn(
@@ -483,27 +483,33 @@ export default function App() {
   // --- ONBOARDING UI ---
   if (!isInitialized && activeTab !== 'Reviews') {
     return (
-      <div className="min-h-screen bg-pure-black flex items-center justify-center p-4 md:p-6 font-sans relative overflow-y-auto">
-        <div className="max-w-3xl w-full bg-soft-black border border-gold/20 rounded-2xl shadow-2xl p-6 md:p-10 relative z-10 gold-border-glow my-8">
-          <div className="mb-6 md:mb-8 flex justify-center">
-            <div className="px-4 md:px-6 py-1.5 md:py-2 rounded-full border border-gold/40 bg-gold/10 flex items-center gap-2 md:gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
-              <span className="text-[9px] md:text-xs font-black text-gold tracking-[0.2em] md:tracking-[0.3em] uppercase italic">System Architect: Krish Narang</span>
-              <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
-            </div>
+      <div className={cn(
+      "min-h-screen bg-pure-black flex items-center justify-center p-4 md:p-6 font-sans relative overflow-y-auto transition-all duration-500",
+      onboardingData.deviceType === 'phone' ? "bg-pure-black/95" : "bg-pure-black"
+    )}>
+      <div className={cn(
+        "w-full bg-soft-black border border-gold/20 rounded-2xl shadow-2xl p-6 md:p-10 relative z-10 gold-border-glow my-8 transition-all duration-500",
+        onboardingData.deviceType === 'phone' ? "max-w-md scale-95" : "max-w-3xl scale-100"
+      )}>
+        <div className="mb-6 md:mb-8 flex justify-center">
+          <div className="px-4 md:px-6 py-1.5 md:py-2 rounded-full border border-gold/40 bg-gold/10 flex items-center gap-2 md:gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+            <span className="text-[9px] md:text-xs font-black text-gold tracking-[0.2em] md:tracking-[0.3em] uppercase italic text-center">System Architect: Krish Narang</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
           </div>
+        </div>
 
-          <div className="flex flex-col items-center mb-8 md:mb-10 text-center">
-            <div className="mb-4 md:mb-6">
-               <div className="p-1.5 md:p-2 bg-white rounded-full border-2 border-gold/40 shadow-[0_0_50px_rgba(212,175,55,0.3)]">
-                <MUNLogo className="w-24 h-24 md:w-40 md:h-40" />
-              </div>
+        <div className="flex flex-col items-center mb-8 md:mb-10 text-center">
+          <div className="mb-4 md:mb-6">
+             <div className="p-1.5 md:p-2 bg-white rounded-full border-2 border-gold/40 shadow-[0_0_50px_rgba(212,175,55,0.3)]">
+              <MUNLogo className="w-24 h-24 md:w-40 md:h-40" />
             </div>
-            <BrandLogo size="lg" showLogo={false} />
-            <p className="text-slate-500 text-[8px] md:text-[10px] mt-3 md:mt-4 font-mono uppercase tracking-[0.3em] md:tracking-[0.5em]">
-              Professional Diplomatic Assistant
-            </p>
           </div>
+          <BrandLogo size={onboardingData.deviceType === 'phone' ? 'md' : 'lg'} showLogo={false} />
+          <p className="text-slate-500 text-[8px] md:text-[10px] mt-3 md:mt-4 font-mono uppercase tracking-[0.3em] md:tracking-[0.5em]">
+            Professional Diplomatic Assistant
+          </p>
+        </div>
 
           <form onSubmit={handleInitialization} className="space-y-4 md:space-y-6 relative z-20">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-2">
@@ -585,7 +591,10 @@ export default function App() {
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div className={cn(
+              "grid gap-4 md:gap-6",
+              onboardingData.deviceType === 'phone' ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"
+            )}>
               <div className="space-y-3 md:col-span-2">
                 <label className="text-gold/80 text-[10px] font-bold flex items-center justify-center gap-2 uppercase tracking-[0.2em] mb-4">
                   <Terminal className="w-3 h-3" /> Select Deployment Environment
@@ -744,7 +753,7 @@ export default function App() {
           "bg-soft-black border-b border-slate-800 flex items-center justify-between z-50 shadow-2xl shrink-0",
           sessionData.deviceType === 'phone' ? "h-14 px-3" : "h-16 lg:h-20 px-4 lg:px-8"
         )}>
-            <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsSidebarOpen(true)}
               className={cn(
@@ -757,7 +766,10 @@ export default function App() {
             <div className="flex items-center gap-3">
               <BrandLogo size={sessionData.deviceType === 'phone' ? 'sm' : 'md'} />
             </div>
-            {sessionData.deviceType === 'laptop' && <div className="h-8 w-px bg-slate-800 hidden lg:block mx-2" />}
+            <div className={cn(
+              "h-8 w-px bg-gold/40 mx-2",
+              sessionData.deviceType === 'laptop' ? "hidden lg:block" : "hidden"
+            )} />
             <nav className={cn(
               "items-center gap-1 bg-pure-black/40 p-1 rounded-xl border border-white/5 scale-90 xl:scale-100 origin-left",
               sessionData.deviceType === 'laptop' ? "hidden lg:flex" : "hidden"
@@ -1415,7 +1427,10 @@ export default function App() {
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 mb-12"
+                  className={cn(
+                    "grid gap-4 md:gap-8 mb-12",
+                    sessionData.deviceType === 'phone' ? "grid-cols-1" : "grid-cols-1 md:grid-cols-3"
+                  )}
                 >
                   <button 
                     onClick={() => setCurrentInput(`As my advisor for ${sessionData.country}, please help me draft a professional Position Paper on the agenda: ${sessionData.agenda}. Focus on our national interest and historical diplomacy.`)}
