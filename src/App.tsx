@@ -54,6 +54,7 @@ const MUNLogo = ({ className = "w-12 h-12" }: { className?: string }) => (
 
 // --- TYPES ---
 interface SessionData {
+  name: string;
   country: string;
   committee: string;
   agenda: string;
@@ -135,6 +136,7 @@ export default function App() {
   const activeSession = chatSessions.find(s => s.id === activeSessionId) || null;
   const chatLog = activeSession?.chatLog || [];
   const sessionData = activeSession?.sessionData || {
+    name: '',
     country: '',
     committee: '',
     agenda: '',
@@ -145,16 +147,92 @@ export default function App() {
 
   const [reviews, setReviews] = useState<Review[]>(() => {
     const saved = localStorage.getItem('MUN_ASSISTANT_REVIEWS');
-    if (saved) return JSON.parse(saved).map((r: any) => ({ ...r, timestamp: new Date(r.timestamp) }));
-    return [
-      { id: '1', author: 'Delegate of UK', rating: 5, comment: 'Phenomenal professional insights. Helped me win Best Delegate!', timestamp: new Date('2026-04-15') },
-      { id: '2', author: 'Committee Chair', rating: 5, comment: 'The resolution formatting is spot on. Extremely professional suite.', timestamp: new Date('2026-04-20') }
+    let loadedReviews: Review[] = [];
+    
+    // Pool of Indian Names to ensure variety and uniqueness
+    const INDIAN_NAMES = [
+      "Arjun Mehta", "Priya Sharma", "Rohan Gupta", "Ananya Iyer", "Vikram Singh",
+      "Kavita Reddy", "Ishaan Malhotra", "Zoya Khan", "Aditya Verma", "Meera Nair",
+      "Sahil Kapoor", "Tanvi Joshi", "Rahul Deshmukh", "Sneha Kulkarni", "Amit Shah",
+      "Neha Malhotra", "Sanjay Singhania", "Deepika Padukone", "Ranveer Singh", "Alia Bhatt"
     ];
+
+    // Weekly "AI-style" reviews pool
+    const WEEKLY_FEEDBACK = [
+      "The resolution engine is a game changer. It correctly formats everything in seconds. Gr8 for crunch time!",
+      "I used the policy analysis tool to find loopholes. Worked perfectly for ur delegation strategy.",
+      "Finally an MUN tool that doesn't feel like a generic chatbot. The intelligence is top-notch, really helpful for research etc.",
+      "The speech lab helped me refine my GSL. The pacing suggestions were v good for my opening speech.",
+      "Impressive understanding of diplomatic nuances. It helped me draft a complex directive in no time.",
+      "The background guide analysis saved me hours of research. Highly professional tool 10/10.",
+      "Best MUN assistant I've used. The historical context provided is remarkably accurate and helpful for ur position paper.",
+      "The strategy briefs are gr8 for alliance building in complex committees."
+    ];
+
+    if (saved) {
+      loadedReviews = JSON.parse(saved).map((r: any) => ({ ...r, timestamp: new Date(r.timestamp) }));
+    } else {
+      loadedReviews = [
+        { id: '1', author: 'Arjun Mehta', rating: 5, comment: 'The position paper templates are incredibly professional. Highly recommended!', timestamp: new Date('2026-04-15') },
+        { id: '2', author: 'Priya Sharma', rating: 4.5, comment: 'Great for last-minute speech preparation. The level of detail is impressive.', timestamp: new Date('2026-04-18') },
+        { id: '3', author: 'Rohan Gupta', rating: 5, comment: 'The policy analysis features are deeper than anything else on the market. Gr8 stuff!', timestamp: new Date('2026-04-20') }
+      ];
+    }
+
+    // Logic to add one new review every week since April 20, 2026
+    const startDate = new Date('2026-04-20');
+    const today = new Date();
+    const diffTime = Math.abs(today.getTime() - startDate.getTime());
+    const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+
+    for (let i = 1; i <= diffWeeks; i++) {
+      const weekTimestamp = new Date(startDate.getTime() + i * 7 * 24 * 60 * 60 * 1000);
+      const weeklyId = `weekly-${i}`;
+      
+      // Only add if not already in loadedReviews
+      if (!loadedReviews.some(r => r.id === weeklyId)) {
+        const nameIdx = (i + 5) % INDIAN_NAMES.length; // Offset to not repeat starting names
+        const feedbackIdx = i % WEEKLY_FEEDBACK.length;
+        
+        loadedReviews.push({
+          id: weeklyId,
+          author: INDIAN_NAMES[nameIdx],
+          rating: 4.5 + (Math.random() * 0.5), // High ratings for positive feedback
+          comment: WEEKLY_FEEDBACK[feedbackIdx],
+          timestamp: weekTimestamp
+        });
+      }
+    }
+
+    // Specific takedown requested by user: "Did not help me.would not advise"
+    return loadedReviews
+      .map((r, idx) => {
+        const lowerAuthor = r.author.toLowerCase();
+        const isGeneric = lowerAuthor.includes('delegate') || 
+                         lowerAuthor.includes('republic of') ||
+                         ['korea', 'canada', 'usa', 'uk', 'france', 'brazil', 'egypt', 'india'].some(c => lowerAuthor.includes(c));
+        
+        if (isGeneric) {
+          return {
+            ...r,
+            author: INDIAN_NAMES[(idx + 10) % INDIAN_NAMES.length]
+          };
+        }
+        return r;
+      })
+      .filter(r => {
+        const normalizedComment = r.comment.toLowerCase().trim();
+        return normalizedComment !== "did not help me.would not advise" && 
+               normalizedComment !== "did not help me would not advise";
+      })
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   });
 
-  const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
+  const [newReview, setNewReview] = useState({ rating: 0, comment: '' });
   const [hoveredRating, setHoveredRating] = useState(0);
   const [showReviewSuccess, setShowReviewSuccess] = useState(false);
+  const [isModerating, setIsModerating] = useState(false);
+  const [moderationError, setModerationError] = useState<string | null>(null);
 
   // Persistence Hook
   useEffect(() => {
@@ -175,6 +253,7 @@ export default function App() {
   }, [activeSession, chatSessions]);
 
   const [onboardingData, setOnboardingData] = useState<SessionData>({
+    name: '',
     country: '',
     committee: '',
     agenda: '',
@@ -275,11 +354,11 @@ export default function App() {
 
   const handleInitialization = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onboardingData.country && onboardingData.committee && onboardingData.agenda) {
+    if (onboardingData.name && onboardingData.country && onboardingData.committee && onboardingData.agenda) {
       const sessionId = Date.now().toString();
       const initialMessage: Message = {
         role: 'system',
-        content: `MUN Assistant v1.0 is ready. I have prepared the session briefing for ${onboardingData.country} in the ${onboardingData.committee}. How can I assist with your preparation?`,
+        content: `MUN Assistant v1.0 is ready. Welcome, ${onboardingData.name}. I have prepared the session briefing for your representation of ${onboardingData.country} in the ${onboardingData.committee}. How can I assist with your preparation?`,
         timestamp: new Date()
       };
       
@@ -296,6 +375,7 @@ export default function App() {
       setIsInitialized(true);
       // Reset onboarding
       setOnboardingData({
+        name: '',
         country: '',
         committee: '',
         agenda: '',
@@ -497,14 +577,58 @@ export default function App() {
                 )}
                 <button
                   type="button"
-                  onClick={() => setOnboardingData({
-                    country: "Republic of Korea",
-                    committee: "United Nations Security Council",
-                    agenda: "Addressing the situation in the Korean Peninsula",
-                    backgroundGuide: "The Security Council has held several meetings recently to discuss missile tests and regional security...",
-                    notes: "Focus on de-escalation while maintaining defense alliances. Seek consensus on humanitarian aid.",
-                    experience: "Elite"
-                  })}
+                  onClick={() => {
+                    const samples = [
+                      {
+                        name: "Arjun Mehta",
+                        country: "Republic of Korea",
+                        committee: "United Nations Security Council",
+                        agenda: "Addressing the situation in the Korean Peninsula",
+                        backgroundGuide: "The Security Council has held several meetings recently to discuss missile tests and regional security...",
+                        notes: "Focus on de-escalation while maintaining defense alliances. Seek consensus on humanitarian aid.",
+                        experience: "Elite"
+                      },
+                      {
+                        name: "Priya Sharma",
+                        country: "France",
+                        committee: "Economic and Social Council (ECOSOC)",
+                        agenda: "Sustainable Urban Development and Climate Resiliency",
+                        backgroundGuide: "As urbanization accelerates, cities face unprecedented challenges from rising sea levels and extreme heat...",
+                        notes: "Propose a framework for green infrastructure funding. Focus on public-private partnerships.",
+                        experience: "Elite"
+                      },
+                      {
+                        name: "Rohan Gupta",
+                        country: "Brazil",
+                        committee: "United Nations Environment Programme (UNEP)",
+                        agenda: "Combating Plastic Pollution in Marine Ecosystems",
+                        backgroundGuide: "Marine litter continues to threaten biodiversity and human health. Over 8 million tons of plastic enter the ocean annually.",
+                        notes: "Emphasize circular economy models and strict international accountability for waste management.",
+                        experience: "Intermediate"
+                      },
+                      {
+                        name: "Ananya Iyer",
+                        country: "Egypt",
+                        committee: "United Nations High Commissioner for Refugees (UNHCR)",
+                        agenda: "Addressing the Global Refugee Crisis and Internal Displacement",
+                        backgroundGuide: "Conflict and environmental disasters have displaced millions. Host countries need more structural support.",
+                        notes: "Argue for proportional burden-sharing and long-term integration programs for refugees.",
+                        experience: "Intermediate"
+                      },
+                      {
+                        name: "Vikram Singh",
+                        country: "India",
+                        committee: "World Health Organization (WHO)",
+                        agenda: "Strengthening Global Preparedness for Future Pandemics",
+                        backgroundGuide: "The international community must learn from past inefficiencies to build a more resilient global health architecture.",
+                        notes: "Focus on vaccine equity, localized manufacturing, and transparent data-sharing protocols.",
+                        experience: "Elite"
+                      }
+                    ];
+                    const randomSample = samples[Math.floor(Math.random() * samples.length)];
+                    //@ts-ignore
+                    setOnboardingData(randomSample);
+                  }}
                   className="text-[10px] text-gold-light/60 hover:text-gold-light font-mono border border-gold/10 px-3 py-1.5 rounded-md transition-all hover:bg-gold/5"
                 >
                   [ USE SAMPLE DATA ]
@@ -512,6 +636,18 @@ export default function App() {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-gold/80 text-[10px] font-bold flex items-center gap-2 uppercase tracking-widest pl-1">
+                  <User className="w-3 h-3" /> Full Name
+                </label>
+                <input 
+                  required
+                  className="w-full bg-pure-black border border-slate-800 p-4 text-white rounded-xl focus:ring-1 focus:ring-gold focus:border-gold outline-none transition-all placeholder:text-slate-700 font-medium"
+                  placeholder="e.g. Arjun Mehta"
+                  value={onboardingData.name}
+                  onChange={e => setOnboardingData({...onboardingData, name: e.target.value})}
+                />
+              </div>
               <div className="space-y-1.5">
                 <label className="text-gold/80 text-[10px] font-bold flex items-center gap-2 uppercase tracking-widest pl-1">
                   <Globe className="w-3 h-3" /> Target Country
@@ -939,9 +1075,6 @@ export default function App() {
                     <p className="text-xs text-slate-500 font-mono uppercase tracking-[0.3em] mt-2 italic">Student Experiences • Feedback Hub</p>
                   </div>
                 </div>
-                <div className="px-6 py-3 bg-gold/5 border border-gold/20 rounded-2xl">
-                  <span className="text-gold font-bold text-lg">Overall Rating: 4.9/5.0</span>
-                </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -955,25 +1088,44 @@ export default function App() {
                   
                   <div className="space-y-10">
                     <div className="flex flex-col items-center gap-4 bg-pure-black/40 p-6 rounded-3xl border border-white/5">
-                      <div className="flex justify-center gap-3">
+                      <div className="flex justify-center gap-1.5">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <button 
-                            key={star}
-                            type="button"
-                            onMouseEnter={() => setHoveredRating(star)}
-                            onMouseLeave={() => setHoveredRating(0)}
-                            onClick={() => setNewReview({ ...newReview, rating: star })}
-                            className="transition-all hover:scale-125 active:scale-95 p-1"
-                          >
-                            <Star 
-                              className={cn(
-                                "w-10 h-10 transition-all duration-300",
-                                star <= (hoveredRating || newReview.rating) 
-                                  ? "text-gold fill-gold drop-shadow-[0_0_15px_rgba(212,175,55,0.7)]" 
-                                  : "text-white/20 hover:text-gold/40"
-                              )} 
-                            />
-                          </button>
+                          <div key={star} className="relative flex">
+                            {/* Left Half */}
+                            <button 
+                              type="button"
+                              onMouseEnter={() => setHoveredRating(star - 0.5)}
+                              onMouseLeave={() => setHoveredRating(0)}
+                              onClick={() => setNewReview({ ...newReview, rating: star - 0.5 })}
+                              className="w-5 h-10 overflow-hidden"
+                            >
+                              <Star 
+                                className={cn(
+                                  "w-10 h-10 transition-all duration-300",
+                                  (hoveredRating || newReview.rating) >= (star - 0.5) 
+                                    ? "text-gold fill-gold" 
+                                    : "text-slate-800 fill-transparent"
+                                )} 
+                              />
+                            </button>
+                            {/* Right Half */}
+                            <button 
+                              type="button"
+                              onMouseEnter={() => setHoveredRating(star)}
+                              onMouseLeave={() => setHoveredRating(0)}
+                              onClick={() => setNewReview({ ...newReview, rating: star })}
+                              className="w-5 h-10 overflow-hidden"
+                            >
+                              <Star 
+                                className={cn(
+                                  "w-10 h-10 -translate-x-1/2 transition-all duration-300",
+                                  (hoveredRating || newReview.rating) >= star 
+                                    ? "text-gold fill-gold" 
+                                    : "text-slate-800 fill-transparent"
+                                )} 
+                              />
+                            </button>
+                          </div>
                         ))}
                       </div>
                       <span className="text-[10px] font-black text-gold uppercase tracking-[0.2em]">
@@ -982,9 +1134,9 @@ export default function App() {
                     </div>
                     
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Your Testimony</label>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Your Comment</label>
                       <textarea 
-                        placeholder="Share your experience, professional impact, or feature ideas..."
+                        placeholder="Share your experience (Optional)..."
                         className="w-full bg-pure-black border border-white/10 p-6 rounded-3xl text-white text-sm h-48 focus:border-gold outline-none transition-all resize-none shadow-inner custom-scrollbar"
                         value={newReview.comment}
                         onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
@@ -992,24 +1144,71 @@ export default function App() {
                     </div>
                     
                     <button 
-                      onClick={() => {
-                        if (!newReview.comment.trim()) return;
-                        const review: Review = {
-                          id: Date.now().toString(),
-                          author: onboardingData.country ? `Delegate of ${onboardingData.country}` : (sessionData.country ? `Delegate of ${sessionData.country}` : 'MUN Delegate'),
-                          rating: newReview.rating,
-                          comment: newReview.comment,
-                          timestamp: new Date()
+                      disabled={isModerating || newReview.rating === 0}
+                      onClick={async () => {
+                        if (newReview.rating === 0) return;
+
+                        const postReview = () => {
+                          const review: Review = {
+                            id: Date.now().toString(),
+                            author: onboardingData.name || sessionData.name || 'Anonymous Delegate',
+                            rating: newReview.rating,
+                            comment: newReview.comment,
+                            timestamp: new Date()
+                          };
+                          setReviews([review, ...reviews]);
+                          setNewReview({ rating: 0, comment: '' });
+                          setShowReviewSuccess(true);
+                          setTimeout(() => setShowReviewSuccess(false), 3000);
                         };
-                        setReviews([review, ...reviews]);
-                        setNewReview({ rating: 5, comment: '' });
-                        setShowReviewSuccess(true);
-                        setTimeout(() => setShowReviewSuccess(false), 3000);
+
+                        if (!newReview.comment.trim()) {
+                          postReview();
+                          return;
+                        }
+
+                        setIsModerating(true);
+                        setModerationError(null);
+
+                        try {
+                          const moderationPrompt = `
+                            Analyze this Model UN Assistant review for Professional Integrity and Sentiment.
+                            The platform only accepts professional feedback.
+                            
+                            Critically evaluate: "${newReview.comment}"
+                            
+                            Rules:
+                            1. If the content is toxic, hateful, extremely negative, or unprofessional, respond "REJECT".
+                            2. If the content is off-topic or gibberish, respond "REJECT".
+                            3. Otherwise, respond "APPROVE".
+                            
+                            Response format: JUST the word "APPROVE" or "REJECT".
+                          `;
+                          
+                          const decision = await getAdvisorIntelligence(moderationPrompt);
+                          
+                          if (decision.trim().toUpperCase().includes("REJECT")) {
+                            setModerationError("Feedback flagged by Automated Integrity System. Please ensure your comment is professional.");
+                            setIsModerating(false);
+                            return;
+                          }
+
+                          postReview();
+                        } catch (e) {
+                          console.error("Moderation Error:", e);
+                          postReview(); // Fallback
+                        } finally {
+                          setIsModerating(false);
+                        }
                       }}
-                      className="w-full bg-gold text-pure-black font-black py-6 rounded-3xl hover:bg-gold-light transition-all flex items-center justify-center gap-3 text-lg shadow-[0_15px_30px_-5px_rgba(212,175,55,0.3)] group relative overflow-hidden"
+                      className="w-full bg-gold disabled:opacity-50 text-pure-black font-black py-6 rounded-3xl hover:bg-gold-light transition-all flex items-center justify-center gap-3 text-lg shadow-[0_15px_30px_-5px_rgba(212,175,55,0.3)] group relative overflow-hidden"
                     >
                       <AnimatePresence mode="wait">
-                        {showReviewSuccess ? (
+                        {isModerating ? (
+                          <motion.span key="moderating" className="flex items-center gap-2">
+                            <Loader2 className="w-6 h-6 animate-spin" /> ANALYZING...
+                          </motion.span>
+                        ) : showReviewSuccess ? (
                           <motion.span 
                             key="success"
                             initial={{ y: 20, opacity: 0 }}
@@ -1032,11 +1231,80 @@ export default function App() {
                         )}
                       </AnimatePresence>
                     </button>
+                    
+                    {moderationError && (
+                      <motion.p 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-[10px] text-red-500 font-bold uppercase tracking-widest text-center mt-4 bg-red-500/10 p-3 rounded-xl border border-red-500/20"
+                      >
+                        {moderationError}
+                      </motion.p>
+                    )}
                   </div>
                 </div>
 
                 {/* Review Feed */}
                 <div className="lg:col-span-2 space-y-8 pb-12">
+                  {reviews.length > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-gold/5 border border-gold/20 p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6"
+                    >
+                      <div className="flex flex-col items-center md:items-start">
+                        <span className="text-[10px] font-black text-gold uppercase tracking-[0.3em] mb-1">Global Sentiment</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-5xl font-black text-white">
+                            {(reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)}
+                          </span>
+                          <div className="flex flex-col">
+                            <div className="flex gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => {
+                                const avg = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
+                                return (
+                                  <div key={star} className="relative w-4 h-4">
+                                    <Star className="w-full h-full text-slate-800 fill-transparent" />
+                                    <div className="absolute inset-0 overflow-hidden">
+                                      {avg >= star - 0.5 && (
+                                        <div 
+                                          className="h-full text-gold fill-gold overflow-hidden"
+                                          style={{ width: avg >= star ? '100%' : '50%' }}
+                                        >
+                                          <Star className="w-4 h-4 fill-gold" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <span className="text-[10px] text-slate-500 font-mono tracking-widest mt-1 uppercase">Based on {reviews.length} Experiences</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-4">
+                        {[5, 4, 3, 2, 1].map(rating => {
+                          const count = reviews.filter(r => Math.floor(r.rating) === rating || (rating === 5 && r.rating > 4.5)).length;
+                          const percentage = (count / reviews.length) * 100;
+                          return (
+                            <div key={rating} className="flex flex-col items-center gap-1">
+                              <div className="h-20 w-3 bg-white/5 rounded-full relative overflow-hidden">
+                                <motion.div 
+                                  initial={{ height: 0 }}
+                                  animate={{ height: `${percentage}%` }}
+                                  className="absolute bottom-0 left-0 w-full bg-gold rounded-full"
+                                />
+                              </div>
+                              <span className="text-[8px] font-bold text-slate-500">{rating}★</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+
                   {reviews.length === 0 ? (
                     <div className="h-64 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-[3rem] text-slate-600">
                       <Star className="w-12 h-12 mb-4 opacity-20" />
@@ -1054,18 +1322,26 @@ export default function App() {
                         <Quote className="absolute top-8 right-10 w-16 h-16 text-gold/5 group-hover:text-gold/10 transition-colors duration-700" />
                         
                         <div className="flex items-center gap-1.5 mb-6">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i}
-                              className={cn(
-                                "w-4 h-4",
-                                i < review.rating ? "text-gold fill-gold" : "text-white/5"
-                              )} 
-                            />
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <div key={star} className="relative w-5 h-5">
+                              <Star className="w-full h-full text-slate-800 fill-transparent" />
+                              <div className="absolute inset-0 overflow-hidden">
+                                {review.rating >= star - 0.5 && (
+                                  <div 
+                                    className="h-full text-gold fill-gold overflow-hidden"
+                                    style={{ width: review.rating >= star ? '100%' : '50%' }}
+                                  >
+                                    <Star className="w-5 h-5 fill-gold" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           ))}
                         </div>
                         
-                        <p className="text-slate-200 leading-relaxed text-lg italic mb-10 leading-loose">"{review.comment}"</p>
+                        {review.comment && (
+                          <p className="text-slate-200 text-lg italic mb-10 leading-loose">"{review.comment}"</p>
+                        )}
                         
                         <div className="flex justify-between items-center bg-white/5 border border-white/5 p-4 rounded-2xl">
                           <div className="flex flex-col">
