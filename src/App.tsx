@@ -61,19 +61,19 @@ const BrandLogo = ({ size = "md", showLogo = true }: { size?: 'sm' | 'md' | 'lg'
   const isLg = size === 'lg';
   
   return (
-    <div className="flex items-center gap-2 md:gap-3">
-      {showLogo && <MUNLogo className={cn(isSm ? "w-6 h-6" : isLg ? "w-16 h-16" : "w-8 h-8 md:w-10 md:h-10", "ring-2 ring-gold/20")} />}
+    <div className="flex items-center gap-2 md:gap-3 whitespace-nowrap">
+      {showLogo && <MUNLogo className={cn(isSm ? "w-6 h-6" : isLg ? "w-16 h-16" : "w-8 h-8 md:w-10 md:h-10", "ring-2 ring-gold/20 flex-shrink-0")} />}
       <div className="flex items-center">
         <h1 className={cn(
           "font-black italic tracking-tighter text-white uppercase",
           isSm ? "text-sm" : isLg ? "text-4xl md:text-6xl" : "text-lg"
         )}>MUN</h1>
         <div className={cn(
-          "w-px bg-gold/40 mx-2 md:mx-3",
+          "w-px bg-gold/40 mx-2 md:mx-3 shrink-0",
           isSm ? "h-4" : isLg ? "h-12" : "h-5"
         )} />
         <h1 className={cn(
-          "font-black italic tracking-tighter text-gold uppercase",
+          "font-black italic tracking-tighter gold-text-gradient uppercase",
           isSm ? "text-sm" : isLg ? "text-4xl md:text-6xl" : "text-lg"
         )}>ADVISOR</h1>
       </div>
@@ -363,7 +363,7 @@ export default function App() {
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: prompt,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
  
       return response.text || "Analysis currently unavailable.";
@@ -779,7 +779,8 @@ export default function App() {
               { id: 'Dashboard', icon: Shield, label: 'Advisor Hub' },
               { id: 'Speech', icon: MessageSquare, label: 'Speech Lab' },
               { id: 'Resolution', icon: FileText, label: 'Resolution Engine' },
-              { id: 'Strategy', icon: Zap, label: 'Policy Analysis' }
+              { id: 'Strategy', icon: Zap, label: 'Policy Analysis' },
+              { id: 'Reviews', icon: Star, label: 'Reviews' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -824,11 +825,11 @@ export default function App() {
         {/* SIDEBAR (Responsive Drawer on Mobile, Stable on Laptop) */}
         <div 
           className={cn(
-            "fixed inset-y-0 left-0 bg-soft-black border-r border-slate-800 flex flex-col z-[100] shadow-2xl transition-transform duration-300 transform",
-            sessionData.deviceType === 'laptop' ? "lg:relative lg:z-10 w-80" : (sessionData.deviceType === 'phone' ? "w-72" : "w-80"),
+            "fixed lg:relative inset-y-0 left-0 bg-soft-black border-r border-slate-800 flex flex-col z-[100] lg:z-10 shadow-2xl transition-transform duration-300 transform",
+            sessionData.deviceType === 'phone' ? "w-72 lg:fixed lg:z-[100] lg:-translate-x-full" : "w-80",
             isSidebarOpen 
               ? "translate-x-0" 
-              : (sessionData.deviceType === 'laptop' ? "-translate-x-full lg:translate-x-0" : "-translate-x-full")
+              : (sessionData.deviceType === 'phone' ? "-translate-x-full" : "-translate-x-full lg:translate-x-0")
           )}
         >
           <div className={cn(
@@ -1116,9 +1117,7 @@ export default function App() {
         {/* FEED */}
         <div className={cn(
           "flex-grow overflow-y-auto bg-pure-black custom-scrollbar",
-          sessionData.deviceType === 'laptop' ? "p-4 md:p-6 xl:p-10 space-y-6 lg:space-y-8" :
-          sessionData.deviceType === 'tablet' ? "p-4 md:p-6 space-y-5" :
-          "p-3 space-y-4"
+          sessionData.deviceType === 'phone' ? "p-3 space-y-4" : "p-4 md:p-8 xl:p-12 space-y-6 lg:space-y-10"
         )}>
           {/* COMMUNITY REVIEWS - SEPARATE FULL PAGE SECTION */}
           {activeTab === 'Reviews' && (
