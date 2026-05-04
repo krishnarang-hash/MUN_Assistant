@@ -353,9 +353,10 @@ export default function App() {
     try {
       console.log(`[CLIENT] AI Request Initiated via @google/genai`);
       
+      // AI Studio environment automatically populates process.env.GEMINI_API_KEY
       const apiKey = process.env.GEMINI_API_KEY;
       
-      if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "undefined" || apiKey === "") {
+      if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "" || apiKey === "undefined") {
         throw new Error("API_KEY_MISSING");
       }
   
@@ -758,7 +759,7 @@ export default function App() {
               onClick={() => setIsSidebarOpen(true)}
               className={cn(
                 "p-2 text-gold hover:bg-gold/10 rounded-xl transition-colors",
-                sessionData.deviceType === 'laptop' ? "lg:hidden" : ""
+                sessionData.deviceType === 'laptop' ? "lg:hidden" : "flex"
               )}
             >
               <Menu className="w-6 h-6" />
@@ -824,9 +825,10 @@ export default function App() {
         <div 
           className={cn(
             "fixed inset-y-0 left-0 bg-soft-black border-r border-slate-800 flex flex-col z-[100] shadow-2xl transition-transform duration-300 transform",
-            sessionData.deviceType === 'laptop' ? "lg:relative lg:translate-x-0 lg:z-10" : "",
-            sessionData.deviceType === 'phone' ? "w-72" : "w-80",
-            isSidebarOpen || (sessionData.deviceType === 'laptop' && window.innerWidth >= 1024) ? "translate-x-0" : "-translate-x-full"
+            sessionData.deviceType === 'laptop' ? "lg:relative lg:z-10 w-80" : (sessionData.deviceType === 'phone' ? "w-72" : "w-80"),
+            isSidebarOpen 
+              ? "translate-x-0" 
+              : (sessionData.deviceType === 'laptop' ? "-translate-x-full lg:translate-x-0" : "-translate-x-full")
           )}
         >
           <div className={cn(
